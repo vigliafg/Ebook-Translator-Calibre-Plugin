@@ -2,4 +2,3 @@ ebooklib
 lxml
 mechanize
 cssselect
-PySocks
