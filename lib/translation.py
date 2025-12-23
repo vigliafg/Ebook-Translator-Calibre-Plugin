@@ -207,6 +207,80 @@ class Translation:
             if paragraph.is_cache:
                 message = _('Translation (Cached): {}')
             self.log(message.format(paragraph.translation.strip()))
+            
+    def handle_batch(self, paragraphs=[]):
+        start_time = time.time()
+        char_count = sum(len(p.original) for p in paragraphs)
+        
+        self.log(sep())
+        self.log(_('Start to translate ebook content (Online Batching)'))
+        self.log(sep('┈'))
+        self.log(_('Item count: {}').format(len(paragraphs)))
+        self.log(_('Character count: {}').format(char_count))
+        
+        if len(paragraphs) < 1:
+            raise Exception(_('There is no content need to translate.'))
+            
+        self.progress_bar.load(len(paragraphs))
+        
+        # Determine batch size (default 20 for OpenRouter)
+        batch_size = 20
+        
+        for i in range(0, len(paragraphs), batch_size):
+            if self.cancel_request():
+                raise TranslationCanceled(_('Translation canceled.'))
+                
+            batch = paragraphs[i:i + batch_size]
+            # Only translate untranslated paragraphs unless fresh is True
+            to_translate = [p for p in batch if not p.translation or self.fresh]
+            
+            if to_translate:
+                self.log(sep())
+                self.log(_('Translating batch starting at row {} ({} items)...').format(batch[0].row if batch[0].row >= 0 else i, len(to_translate)))
+                
+                # Perform batch translation with retries
+                results = None
+                retry = 0
+                interval = 5
+                while retry < self.translator.request_attempt:
+                    if self.cancel_request():
+                        raise TranslationCanceled(_('Translation canceled.'))
+                    
+                    try:
+                        results = self.translator.translate_batch([p.original for p in to_translate])
+                        if results and len(results) == len(to_translate):
+                            break
+                        else:
+                            raise Exception("Incomplete batch result")
+                    except Exception as e:
+                        retry += 1
+                        self.log(_('Batch failed ({}): {}').format(retry, str(e)), True)
+                        if retry >= self.translator.request_attempt:
+                            raise TranslationFailed(_('Batch translation failed after {} attempts').format(retry))
+                        time.sleep(interval)
+                        interval += 5
+                
+                # Apply results
+                if results:
+                    for p, trans in zip(to_translate, results):
+                        p.translation = trans
+                        p.is_cache = False
+                        p.engine_name = self.translator.name
+                        p.target_lang = self.translator.get_target_lang()
+                        if self.translator.merge_enabled:
+                            p.do_aligment(self.translator.separator)
+            
+            # Process results for UI
+            for p in batch:
+                self.process_translation(p)
+                if self.cancel_request():
+                    raise TranslationCanceled(_('Translation canceled.'))
+
+        self.log(sep())
+        consuming = round((time.time() - start_time) / 60, 2)
+        self.log(_('Time consuming: {} minutes').format(consuming))
+        self.log(_('Translation completed.'))
+        self.progress(1, _('Translation completed.'))
 
     def handle(self, paragraphs=[]):
         start_time = time.time()
@@ -224,6 +298,11 @@ class Translation:
         if self.total < 1:
             raise Exception(_('There is no content need to translate.'))
         self.progress_bar.load(self.total)
+
+        # Check for Online Batching support
+        config = get_config()
+        if config.get('online_batching') and hasattr(self.translator, 'translate_batch'):
+            return self.handle_batch(paragraphs)
 
         handler = Handler(
             paragraphs, self.translator.concurrency_limit,

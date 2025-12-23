@@ -1,0 +1,31 @@
+def get_config():
+    return {
+        'translation_position': 'below',
+        'merge_enabled': False,
+        'merge_length': 1000,
+        'original_color': None,
+        'translation_color': None,
+        'element_rules': [],
+        'reserve_rules': [],
+        'priority_rules': [
+             'p', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote'
+        ],
+        'filter_rules': [],
+        'ignore_rules': [],
+        'ebook_metadata': {'metadata_translation': True},
+        'rule_mode': 'normal',
+        'filter_scope': 'content',
+        'column_gap': {},
+        'api_keys': [],
+        'concurrency_limit': 1,
+        'request_interval': 0.1,
+        'request_attempt': 3,
+        'request_timeout': 30,
+        'max_error_count': 5,
+        'prompt': '',
+        'model': 'gemini-1.5-flash',
+        'temperature': 1.0,
+        'top_p': 0.95,
+        'top_k': 40,
+        'stream': False,
+    }

@@ -554,8 +554,10 @@ class TranslationSetting(QDialog):
         self.disable_wheel_event(temperature_value)
         self.disable_wheel_event(top_p_value)
 
-        stream_enabled = QCheckBox(_('Enable streaming response'))
-        genai_layout.addRow(_('Stream'), stream_enabled)
+        self.online_batching = QCheckBox(_('Enable online batching (High Speed)'))
+        genai_layout.addRow(_('Batching'), self.online_batching)
+        self.stream_enabled = QCheckBox(_('Enable streaming response'))
+        genai_layout.addRow(_('Stream'), self.stream_enabled)
 
         sampling_btn_group = QButtonGroup(sampling_widget)
         sampling_btn_group.addButton(temperature, 0)
@@ -699,10 +701,14 @@ class TranslationSetting(QDialog):
                 top_k_value.valueChanged.connect(
                     lambda value: config.update(top_k=value))
             # Stream
-            stream_enabled.setChecked(
+            self.stream_enabled.setChecked(
                 config.get('stream', self.current_engine.stream))
-            stream_enabled.toggled.connect(
+            self.stream_enabled.toggled.connect(
                 lambda checked: config.update(stream=checked))
+            # Online Batching
+            self.online_batching.setChecked(self.config.get('online_batching'))
+            self.online_batching.toggled.connect(
+                lambda checked: self.config.update(online_batching=checked))
             genai_group.setVisible(True)
 
         def choose_default_engine(index):
