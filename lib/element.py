@@ -3,7 +3,8 @@ import json
 import copy
 from typing import Any
 
-from lxml import etree
+from lxml import etree  # type: ignore
+
 from calibre import prepare_string_for_xml as xml_escape  # type: ignore
 
 from .utils import (
@@ -239,8 +240,10 @@ class PageElement(Element):
 
     def _polish_translation(self, translation):
         translation = translation.replace('\n', '<br/>')
-        # Condense consecutive letters to a maximum of four.
-        return re.sub(r'((\w)\2{3})\2*', r'\1', translation)
+        # Condense a run of the same letter down to four (some engines emit
+        # repetition artifacts). Digits and underscores are excluded so that
+        # legitimate content such as "100000000" is not silently corrupted.
+        return re.sub(r'(([^\W\d_])\2{3})\2*', r'\1', translation)
 
     def _create_new_element(
             self, name, content='', copy_attrs=True, excluding_attrs=[]):
@@ -684,7 +687,7 @@ class ElementHandler:
         # conflicts with the mechanism of merge translation.
         default_rules = (
             'img', 'code', 'br', 'hr', 'sub', 'sup', 'kbd', 'abbr', 'wbr',
-            'var', 'canvas', 'svg', 'script', 'style')
+            'var', 'canvas', 'svg', 'script', 'style', 'math')
         self.reserve_pattern = create_xpath(default_rules + tuple(rules))
 
     def prepare_original(self, elements):
@@ -842,13 +845,12 @@ def get_metadata_elements(metadata):
     names = (
         'title', 'creator', 'publisher', 'rights', 'subject', 'contributor',
         'description')
-    pattern = re.compile(r'[a-zA-Z]+')
     for key in metadata.iterkeys():
         if key not in names:
             continue
         items = getattr(metadata, key)
         for item in items:
-            if pattern.search(item.content) is None:
+            if not any(char.isalpha() for char in item.content):
                 continue
             element = MetadataElement(
                 item, page_id='content.opf', ignored=not enable_translation)
