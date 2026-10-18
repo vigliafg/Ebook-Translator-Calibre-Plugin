@@ -8,14 +8,12 @@ class OpenRouterTranslate(ChatgptTranslate):
     name = 'OpenRouter'
     alias = 'OpenRouter'
     endpoint = 'https://openrouter.ai/api/v1/chat/completions'
-    
-    # Specialized Italian literary translator prompt
-    prompt = (
-        "Sei un traduttore letterario esperto dall'inglese all'italiano, con profonda conoscenza della letteratura anglosassone. "
-        "Il tuo obiettivo è produrre traduzioni accurate, fluide e idiomatiche che preservino fedeltà semantica, stile e tono originale. "
-        "Usa un italiano colto ed elegante. Mantieni invariati paragrafi, dialoghi e capitoli. "
-        "Rispondi SOLO con la traduzione pura, senza introduzioni o spiegazioni."
-    )
+
+    # No persona of its own: the neutral prompt of ``ChatgptTranslate`` is the
+    # right default for any genre. The per-book specialisation comes from the
+    # app's genre analysis (style addendum appended by ``book.translate_epub``).
+    # A hard-coded *literary* prompt here made short segments of a medical
+    # textbook come out as "colpo" (blow) instead of "ictus" (stroke).
 
     models: list[str] = [
         'deepseek/deepseek-chat', 
