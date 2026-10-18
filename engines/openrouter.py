@@ -9,6 +9,12 @@ class OpenRouterTranslate(ChatgptTranslate):
     alias = 'OpenRouter'
     endpoint = 'https://openrouter.ai/api/v1/chat/completions'
 
+    # OpenRouter is a generic gateway with no vendor-tuned value; 1.0 made
+    # short, context-free segments drift (a chapter title "Stroke" came out as
+    # both "Ictus" and "Colpo"). Keep it low and let the genre addendum decide
+    # the style. Per-engine/user settings can still override it.
+    temperature = 0.2
+
     # No persona of its own: the neutral prompt of ``ChatgptTranslate`` is the
     # right default for any genre. The per-book specialisation comes from the
     # app's genre analysis (style addendum appended by ``book.translate_epub``).
