@@ -107,6 +107,9 @@ class ChatgptTranslate(GenAI):
                 else {'enabled': bool(self.reasoning)})
         return body
 
+    #: True while a batch request is being built (see ``apply_max_tokens``).
+    batch = False
+
     #: Room for a JSON batch answer. The default chat budget is fine for one
     #: segment, but a batch of 20 plus reasoning tokens hits it and the JSON
     #: comes back truncated (``finish_reason == "length"``).
